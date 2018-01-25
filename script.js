@@ -1,180 +1,268 @@
 
-    var Elem = {
-        // y: '',
-        // x: '',
-        id: '',
-        colored: false
-    }
-///////////////////////////////////////////////////////////////
+var game_js_app = function (element, options) {
 
+  function GameJS() {
+  //create Html elements
+    var gameHolder = element;
+    gameHolder.classList.add('game-holder');
 
-    var wrapper = document.querySelector('.wrapper');
+    var $this = this;
 
-    var box = document.createElement('div');
-        box.id = 'box';
-        wrapper.appendChild(box);
+    $this.gameBox = document.createElement('div');
+    $this.gameBox.classList.add('game-box');
 
-    var startBtn = document.createElement('button');
-        startBtn.id = 'startBtn';
-        startBtn.appendChild(document.createTextNode('Start/Stop'));
-        wrapper.appendChild(startBtn);
+    var gameStartBtn = document.createElement('button');
+    gameStartBtn.id = 'startBtn';
+    gameStartBtn.appendChild(document.createTextNode('Start/Stop'));
 
-    var clearBtn = document.createElement('button');
-        clearBtn.id = 'clearBtn';
-        clearBtn.appendChild(document.createTextNode('Clear'));
-        wrapper.appendChild(clearBtn);
+    var gameClearBtn = document.createElement('button');
+    gameClearBtn.id = 'clearBtn';
+    gameClearBtn.appendChild(document.createTextNode('Clear'));
 
-    var setting = {
-        cols: 50,
-        rows: 50,
-        elemWidth: 10,
-        elemHeight: 10
-    }
+    gameHolder.appendChild($this.gameBox);
+    gameHolder.appendChild(gameStartBtn);
+    gameHolder.appendChild(gameClearBtn);
 
-    function createBox(setting) {
-        var boxHeight = setting.elemHeight * setting.rows;
-        var boxWidth = setting.elemWidth * setting.cols;
-        box.style.height = boxHeight + 'px';
-        box.style.width = boxWidth + 'px';
-    }
-    createBox(setting);
+  //create Variables
+    $this.elems = [];
+    $this.coloredTotal = 0;
+    $this.oldColoredStr = '';
+    $this.newColoredStr = '';
+    $this.gameOn = null;
+    $this.gameState = false;
 
+  // set up settings, default or customs.
+    $this.options = options;
 
-//////////////////////////////////////////////////////////
+    var defaultOptions = {
+      cols: 30,
+      rows: 30,
+      elemWidth: 15,
+      elemHeight: 15,
+      timeInterval: 100
+    };
 
-    var rows = setting.rows;
-	var cols = setting.cols;
-	var arrRows = rows -1;
-	var arrCols = cols -1;
+    var settings = Object.assign({}, defaultOptions, options);
 
-    function elemNeighbors(y, x, elemNbs) {
-        function vector(Y, X){
-            var nY = y + Y;
-            var nX = x + X;
+    $this.cols = settings.cols;
+    $this.rows = settings.rows;
+    $this.elemWidth = settings.elemWidth;
+    $this.elemHeight = settings.elemHeight;
+    $this.timeInterval = settings.timeInterval;
 
-            if(nY < 0){
-                nY = arrRows;
-            }else if(nY > arrRows){
-                nY = 0
-            }
-            if(nX < 0){
-                nX = arrCols;
-            }else if(nX > arrCols){
-                nX = 0;
-            }
-            elemNbs.push(nY+'_'+nX);
-        }
-        vector(-1, -1);
-        vector(-1, 0);
-        vector(-1, 1);
-        vector(0, 1);
-        vector(1, 1);
-        vector(1, 0);
-        vector(1, -1);
-        vector(0, -1);
-    }
+  // add events to buttons control
+    $this.gameBox.addEventListener('click', function (event){
+      var current = event.target;
+      var cords = current.id.split('_');
+      var y = cords[0];
+      var x = cords[1];
 
-    var elems = [];
+      if(!current.classList.contains('colored')){
+        current.classList.add('colored');
+        $this.elems[y][x].colored = true;
+        $this.coloredTotal ++;
+      }
+      else{
+        current.classList.remove('colored');
+        $this.elems[y][x].colored = false;
+        $this.coloredTotal --;
+      }
+    });
 
-    function createElems() {
-        for (var y = 0; y < rows; y++) {
-            var arr = [];
-            for (var x = 0; x < cols; x++) {
-                var elem = Object.create(Elem);
-                arr.push(elem);
-                var elemNbs = elem.neighbors = [];
-                elemNeighbors(y, x, elemNbs);
-            }
-            elems.push(arr);
-        }
-    }
-    createElems();
+    gameStartBtn.addEventListener('click', function(){
+      if($this.coloredTotal !== 0 && $this.gameState === false){
+        $this.startGame();
+      }
+      else{
+        $this.stopGame();
+      }
+    });
 
-    function paintGrid() {
-        var squares = '';
-        for (var y = 0; y < rows; y++) {
-            for (var x = 0; x < cols; x++) {
-                var id = y+'_'+x;
-                if(elems[y][x].colored == true){
-                    squares += '<span id="'+ id +'" class="colored"></span>';
-                }
-                else{
-                    squares += '<span id="'+ id +'"></span>';
-                }
-            }
-        }
-        box.innerHTML = squares;
-    }
-    paintGrid();
+    gameClearBtn.addEventListener('click', function (){
+      $this.stopGame();
+      $this.coloredTotal = 0;
+      $this.elems = [];
+      $this.createElems();
+      $this.createGrid();
+    });
+  }
 
-    function setupElems() {
-        for (var y = 0; y < rows; y++) {
-            for (var x = 0; x < cols; x++) {
-                var elem = elems[y][x];
-                var elemNbs = elem.neighbors;
-                var result = 0;
-                for (var k = 0; k < 8; k++){
-                    elemNbs[k].split('_');
-                    var cords = elemNbs[k].split('_');
-                    var y1 = cords[0];
-                    var x1 = cords[1];
-                    var elemNb = elems[y1][x1];
-                    if(elemNb.colored == true){
-                        result += 1;
-                    }
-                }
-				if(result == 3){
-					elem.colored = true
-				}
-				else if(result < 2 || result > 3){
-					elem.colored = false
-				}
-            }
-        }
-    }
+///////////////////////////////////////////////////////
 
-    box.addEventListener('click', function (event){
-        var current = event.target;
-        var cords = current.id.split('_');
-        var y = cords[0];
-        var x = cords[1];
-        var elem = elems[y][x];
+  // initialisation game
+  GameJS.prototype.gameInit = function() {
+    var $this = this;
+    $this.createBox();
+    $this.createElems();
+    $this.createGrid();
+  };
 
-        if(!current.classList.contains('colored')){
-            current.classList.add('colored');
-            elem.colored = true;
+  // start game
+  GameJS.prototype.startGame = function(){
+    var $this = this;
+    var timeInterval = $this.timeInterval;
+    $this.gameState = true;
+    var newStep = function(){
+      console.time('timeOneStep');
+      $this.checkElems();
+      $this.createGrid();
+      console.timeEnd('timeOneStep');
+    };
+    $this.gameOn = setInterval(newStep, timeInterval);
+  };
+
+  // stop game
+  GameJS.prototype.stopGame = function() {
+    var $this = this;
+    clearInterval($this.gameOn);
+    $this.gameState = false;
+  };
+
+  // create html wrapper for elements
+  GameJS.prototype.createBox = function() {
+    var $this = this;
+    var boxHeight = $this.elemHeight * $this.rows;
+    var boxWidth = $this.elemWidth * $this.cols;
+    $this.gameBox.style.height = boxHeight + 'px';
+    $this.gameBox.style.width = boxWidth + 'px';
+  };
+
+  // create grid from html elements
+  GameJS.prototype.createGrid = function() {
+    var $this = this;
+    var rows = $this.rows;
+    var cols = $this.cols;
+    var elemHeight = $this.elemHeight;
+    var elemWidth = $this.elemWidth;
+    var squares = '';
+    var elems = $this.elems;
+
+    for (var y = 0; y < rows; y++) {
+      for (var x = 0; x < cols; x++) {
+        var id = y+'_'+x;
+        if(elems[y][x].colored === true){
+          squares += '<span id="'+ id +'" class="colored" style="height: '+ elemHeight +'px; width: '+ elemWidth +'px;"></span>';
         }
         else{
-            current.classList.remove('colored');
-            elem.colored = false;
+          squares += '<span id="'+ id +'" style="height: '+ elemHeight +'px; width: '+ elemWidth +'px;"></span>';
         }
-    });
+      }
+    }
+    $this.gameBox.innerHTML = squares;
+  };
 
-    clearBtn.addEventListener('click', function (){
-        if(!box.classList.contains('start')){   // GRID re-setUp if game is stopped
-            elems = [];
-            createElems();
-            paintGrid();
+  // create arrey with object for each elements
+  GameJS.prototype.createElems = function() {
+    var $this = this;
+    var rows = $this.rows;
+    var cols = $this.cols;
+
+    var Elem = {
+      id: '',
+      colored: false
+    };
+
+    var elems = $this.elems;
+
+    for (var y = 0; y < rows; y++) {
+      var arr = [];
+      for (var x = 0; x < cols; x++) {
+        var elem = Object.create(Elem);
+        arr.push(elem);
+      }
+      elems.push(arr);
+    }
+  };
+
+  // check each elements if he had prop. colored = true
+  GameJS.prototype.checkElems  = function() {
+    var $this = this;
+    var rows = $this.rows;
+    var cols = $this.cols;
+    $this.coloredTotal = 0;
+    $this.newColoredStr = '';
+
+    for (var y = 0; y < rows; y++) {
+      for (var x = 0; x < cols; x++) {
+
+        var elem = $this.elems[y][x];
+
+        if(elem.colored === true){
+          $this.coloredTotal ++;
+          $this.newColoredStr += '1';
         }
-    });
-
-    startBtn.addEventListener('click', function (){
-        box.classList.toggle('start');
-        function timeout() {
-            setTimeout(function () {
-                setupElems();
-                paintGrid();
-                if(box.classList.contains('start')){
-                    timeout();
-                }
-            }, 100);
+        else{
+          $this.newColoredStr += '0';
         }
-        timeout();
-    });
 
+        var elemNeighborsColored = $this.checkElemNeighbors(y, x);
 
+        if(elemNeighborsColored === 3){
+          elem.colored = true;
+        }
+        else if(elemNeighborsColored < 2 || elemNeighborsColored > 3){
+          elem.colored = false;
+        }
+      }
+    }
+    if($this.newColoredStr === $this.oldColoredStr){
+      alert('Game Over');
+      $this.stopGame();
+      $this.gameState = false;
+    }
+    $this.oldColoredStr = $this.newColoredStr;
+  };
 
+// check 8 neighbors for each elements if they had prop. colored = true
+  GameJS.prototype.checkElemNeighbors = function(y, x) {
+    var $this = this;
+    var arrRows = $this.rows -1;
+    var arrCols = $this.cols -1;
+    var result = 0;
 
+    function vector(x1, y1){
+      var nY = y + y1;
+      var nX = x + x1;
 
+      if(nY < 0){
+        nY = arrRows;
+      }else if(nY > arrRows){
+        nY = 0
+      }
+      if(nX < 0){
+        nX = arrCols;
+      }else if(nX > arrCols){
+        nX = 0;
+      }
+      if ($this.elems[nY][nX].colored === true) {
+        result += 1;
+      }
+    }
+    vector(-1, -1);
+    vector(-1, 0);
+    vector(-1, 1);
+    vector(0, 1);
+    vector(1, 1);
+    vector(1, 0);
+    vector(1, -1);
+    vector(0, -1);
 
+    return result;
+  };
 
+  var game_js = new GameJS();
+  game_js.gameInit();
+};
+  //////////////////////////////////////////////
+//set custom options and initial new game
+
+  var options = {
+    cols: 25,
+    rows: 25,
+    elemWidth: 25,
+    elemHeight: 25,
+    timeInterval: 100
+  };
+  var element = document.querySelector('#game-js');
+
+  game_js_app(element, options);
