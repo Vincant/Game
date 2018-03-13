@@ -2,8 +2,8 @@
 var game_js_app = function (element, options) {
 
   function GameJS() {
-  //create Html elements
-    var gameHolder = element;
+    //create Html elements
+    var gameHolder = document.querySelector(element);
     gameHolder.classList.add('game-holder');
 
     var $this = this;
@@ -263,6 +263,5 @@ var game_js_app = function (element, options) {
     elemHeight: 25,
     timeInterval: 100
   };
-  var element = document.querySelector('#game-js');
 
-  game_js_app(element, options);
+  game_js_app('#game-js', options);
